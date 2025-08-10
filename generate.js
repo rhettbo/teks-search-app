@@ -17,13 +17,21 @@ const puppeteer = require("puppeteer");
 let browser;
 
 (async () => {
-  browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  console.log("🚀 Puppeteer browser launched");
-})();
+  try {
+    const execPath = (typeof puppeteer.executablePath === 'function')
+      ? puppeteer.executablePath()
+      : undefined;
 
+    browser = await puppeteer.launch({
+      headless: "new",
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || execPath,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    console.log("🚀 Puppeteer browser launched");
+  } catch (e) {
+    console.error("❌ Puppeteer launch failed:", e.message);
+  }
+})();
 
 // 🧠 In-memory history map for retry deduplication per prompt
 const outputHistoryMap = new Map();
