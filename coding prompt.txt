@@ -1,0 +1,5 @@
+Ok these are my files that we'll be referencing and using to make the tweaks i'm looking at today. we're going to fix them in small blocks at a time to make it manageable and precise. I need to know EXACT locations on where to either place them before/after/or paste over. Pull those EXACT locations directly form the files i've attached.
+
+Let's try to solve things in the conversation and only use canvas if we're going to have to replace a very large block.
+
+do you understand the parameters of this project so far?

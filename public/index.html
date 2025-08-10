@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="data:,">
+  <title>TEKS App</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+   </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+
+  <div id="selectedTEKSContainer" style="display:none;">
+    <h2>Selected TEKS</h2>
+    <div id="selectedTEKS"></div>
+
+ <div class="controls-row" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem;">
+      <div>
+        <button id="generateObjectivesBtn" class="action-btn">Generate Objectives</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <button id="generateLessonPlanBtn" class="action-btn">Generate Lesson Plan</button>
+        <select id="lessonDurationSelect" class="action-btn">
+          <option value="45">45-Min</option>
+          <option value="90">90-Min</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 0.5rem;">
+        <button id="generateAssessmentBtn" class="action-btn">Generate Assessment</button>
+        <button id="clearSelectedBtn" class="action-btn">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>TEKS Search Tool</h1>
+    <div id="controlsContainer" class="sticky-controls">
+      <label for="gradeSelect">Grade Level:</label>
+      <select id="gradeSelect"></select>
+
+      <label for="subjectSelect">Subject:</label>
+      <select id="subjectSelect"></select>
+
+      <input type="text" id="searchInput" placeholder="Type a keyword or topic..." />
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px;">
+        <button id="searchBtn">Search</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+    <div id="results"></div>
+  </div>
+
+  <div id="aiModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeModalBtn">&times;</span>
+      <div id="aiResponseContainer"></div>
+    </div>
+  </div>
+
+  <div id="assessmentPreviewModal" class="modal hidden">
+  <div class="modal-content">
+    <span id="closeAssessmentPreviewModal" class="close">&times;</span>
+    <h2>📋 Assessment Preview</h2>
+    <div id="assessmentPreviewText" class="preview-text"></div>
+    <button id="confirmCreateAssessmentBtn">Create the Assessment</button>
+    <button id="tryAgainPreviewBtn" class="try-again-btn">🔁 Try Again</button> <!-- 👈 Add this -->
+  </div>
+</div>
+
+  <div id="assessmentModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-modal" id="closeAssessmentModal">&times;</span>
+      <h2>Create an Assessment</h2>
+
+      <label for="sourceTypeSelect">Choose Source Material:</label>
+      <select id="sourceTypeSelect">
+        <option value="teks">Generate from selected TEKS</option>
+        <option value="upload">Upload File(s)</option>
+        <option value="doc">Paste link from Google Drive</option>
+        <option value="youtube">Paste YouTube Link</option>
+      </select>
+
+      <div id="fileUploadSection" class="hidden">
+       <label for="assessmentFiles" class="upload-label">Upload file(s):</label>
+       <input type="file" id="assessmentFiles" multiple class="upload-input" />
+      </div>
+
+      <div id="docLinkSection" class="hidden">
+        <label>Google Doc/Slides link: <input type="text" id="googleDocLink" /></label>
+      </div>
+
+      <div id="youtubeLinkSection" class="hidden">
+        <label>YouTube link: <input type="text" id="youtubeLink" /></label>
+      </div>
+      
+      <label for="assessmentTypeSelect">Assessment Type:</label>
+      <select id="assessmentTypeSelect">
+        <option value="mixed">Mixed Assessment</option>
+        <option value="essay">Essay</option>
+        <option value="quickwrite">Quick Write</option>
+      </select>
+
+<div id="elaModeContainer" class="hidden" style="margin-top: 1rem;">
+  <label class="checkbox-label">
+    ELA Mode
+    <input type="checkbox" id="elaModeToggle" />
+  </label>
+</div>
+
+      <div id="essayStyleSection" class="hidden">
+       <label for="essayStyleSelect">Essay Style:</label>
+       <select id="essayStyleSelect">
+         <option value="argumentative">Argumentative Essay</option>
+         <option value="compare-contrast">Compare & Contrast Essay</option>
+         <option value="DBQ">DBQ (Document-Based Question)</option>
+         <option value="descriptive">Descriptive Essay</option>
+         <option value="expository">Expository Essay (includes How-To/Procedural)</option>
+         <option value="informative">Informative/Research Essay</option>
+         <option value="literary">Literary Analysis Essay</option>
+         <option value="narrative">Narrative Essay</option>
+         <option value="persuasive">Persuasive/Opinion Essay</option>
+         <option value="RAFT">RAFT Writing</option>
+       </select>
+      </div>
+
+      <div id="mixedOptions">
+  <fieldset>
+    <legend>Question Types:</legend>
+    <label>Multiple Choice <input type="checkbox" name="questionFormat" value="multiple" checked></label><br>
+    <label>True/False <input type="checkbox" name="questionFormat" value="truefalse"></label><br>
+    <label>Short Answer <input type="checkbox" name="questionFormat" value="short"></label>
+  </fieldset>
+
+  <div class="question-count-group">
+    <label for="questionCount">Number of Questions:</label>
+    <select id="questionCount">
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="15">15</option>
+      <option value="20">20</option>
+      <option value="25">25</option>
+      <option value="30">30</option>
+      <option value="35">35</option>
+      <option value="40">40</option>
+      <option value="45">45</option>
+      <option value="50">50</option>
+    </select>
+  </div>
+</div>
+
+      <div style="margin-top: 1rem; display: flex; justify-content: space-between;">
+        <button id="generateAssessmentPreviewBtn">Generate Assessment</button>
+      </div>
+
+      <div id="assessmentPreview" class="hidden"></div>
+    </div>
+  </div>
+<script defer src="script.js"></script>
+
+<!-- 🔵 Generating Loader (small modal) -->
+<div id="genLoader" class="gen-modal hidden" role="dialog" aria-modal="true" aria-live="polite" aria-label="Generating">
+  <div class="gen-card" role="document">
+    <div class="gen-row">
+      <svg class="gen-spinner" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="track" cx="12" cy="12" r="10" fill="none" stroke-width="3"/>
+        <circle class="arc"   cx="12" cy="12" r="10" fill="none" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div class="gen-text">
+        <div id="genTitle" class="gen-title">Generating…</div>
+        <div class="gen-sub">
+          <span id="genDotsBase">Please wait</span><span class="gen-dots" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+    <div class="gen-bar"><div class="gen-bar-fill"></div></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,516 @@
+/* =====================
+   General App Styling
+===================== */
+body {
+  font-family: sans-serif;
+  background: #f8f9fa;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* =====================
+   Modal Styling
+===================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10001;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+.modal.show,
+.modal.active {
+  display: flex !important;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 1000px;
+  width: 98%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  margin: 10vh auto;
+}
+
+.close,
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#assessmentPreview {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+#assessmentPreviewModal {
+  z-index: 10010;
+}
+
+.preview-text pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit; /* <- use body font */
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+
+/* =====================
+   TEKS Display Styling
+===================== */
+.result {
+  background: #fff;
+  padding: 15px;
+  margin-top: 10px;
+  border-left: 5px solid #007bff;
+}
+
+.result strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+}
+
+.selected-teks-tag {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 5px 10px;
+  margin: 0 5px 10px 0;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+#selectedTEKSContainer {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 250px;
+  background: #e9f7ef;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  z-index: 1000;
+}
+
+#selectedTEKSContainer h2 {
+  margin-top: 0;
+}
+
+/* =====================
+   Action Buttons
+===================== */
+.action-btn,
+#lessonDurationSelect {
+  height: 25px;
+  font-size: 13px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =====================
+   Sticky Controls
+===================== */
+.sticky-controls {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 100;
+  padding: 10px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+/* =====================
+   Search Mode Toggle
+===================== */
+.search-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* =====================
+   Objective Box Styling
+===================== */
+.objective-box {
+  margin-bottom: 0.5rem;
+  padding: 0;
+}
+
+.wrapped-objectives {
+  margin: 0;
+  padding: 0;
+}
+
+.wrapped-objectives p {
+  margin: 0;
+  line-height: 1.4;
+  list-style: none !important;
+}
+
+.wrapped-objectives p:first-child {
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+}
+
+.wrapped-objectives p + p {
+  padding-left: calc(1.5em + 0.5em);
+  text-indent: 0;
+  margin-top: 0.5em;
+}
+
+.objective-number {
+  display: inline-block;
+  width: 1.5em;
+  text-align: right;
+  margin-right: 0.25em;
+  font-weight: bold;
+}
+
+.from-objective-btn {
+  display: block;
+  margin: 0.5em 0 0 2em;
+}
+
+/* =====================
+   Lesson Section Styles
+===================== */
+.lesson-section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.lesson-section h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.lesson-section p {
+  margin: 0.75rem 0;
+  line-height: 1.5;
+  color: #444;
+}
+
+.lesson-section ul,
+.lesson-section ol {
+  margin: 0.5rem 0 1rem 0;       /* ← remove left margin */
+  padding-left: 0;               /* ← ensure no indent */
+  list-style-position: inside;   /* ← bullets/numbers inline */
+}
+
+.lesson-section li {
+  margin-bottom: 0.5rem;
+}
+
+/* =====================
+   Miscellaneous
+===================== */
+.try-again-btn {
+  display: inline-block;
+  padding: 0.5em 1em;
+  margin: 1.5em 0 0 2em;
+  background-color: royalblue;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.try-again-btn:hover {
+  background-color: #4169e1;
+}
+
+/* Visibility Toggle */
+.hidden {
+  display: none !important;
+}
+
+/* =====================
+Generate Assessment Menu
+===================== */
+
+#assessmentModal .modal-content {
+  max-width: 600px;
+  width: 95%;
+  padding: 20px;
+}
+
+#assessmentModal label,
+#assessmentModal select {
+  display: block;
+  margin-top: 1rem;
+  font-size: 14px;
+}
+
+#assessmentModal select {
+  width: 100%;
+  max-width: 300px;
+}
+
+#mixedOptions {
+  margin-top: 1.5rem;
+  background: #f9f9f9;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  max-width: 400px;
+}
+
+#mixedOptions fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+#mixedOptions legend {
+  font-weight: bold;
+}
+
+#mixedOptions label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 0.1rem;  /* extremely tight row spacing */
+  white-space: nowrap;    /* prevent wrapping */
+  gap: 0.35rem;            /* tight spacing between label text and checkbox */
+}
+
+/* This is the key change to align the checkboxes into a column */
+/* By targeting the checkbox input directly, we can control its placement */
+
+#mixedOptions label input[type="checkbox"] {
+  margin: 0;
+  transform: translateY(-1px); /* fine-tune alignment */
+}
+
+.question-count-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+.question-count-group label {
+  margin-bottom: 0.25rem;
+  font-size: 14px;
+}
+
+#fileUploadSection {
+  margin-top: 1rem;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.upload-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 0.25rem;
+}
+
+.upload-input {
+  display: block;
+  font-size: 14px;
+  max-width: 300px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+}
+
+.question-block {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  line-height: 1.8; /* 🔹 MORE space between lines */
+}
+
+.question-block strong {
+  display: inline-block;
+  min-width: 120px;
+  font-weight: 600;
+  color: #333;
+}
+
+.question-block br + strong {
+  margin-top: 0.75em;
+  display: inline-block;
+}
+
+#elaModeContainer .checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  white-space: nowrap;
+  gap: 0.35rem;
+}
+
+#elaModeContainer .checkbox-label input[type="checkbox"] {
+  margin: 0;
+  transform: translateY(-1px);
+}
+
+/* Grade & Subject dropdowns: full border, consistent look, and no disappearing edge */
+#gradeSelect,
+#subjectSelect {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background-color: #fff;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative; /* ensures Grade stays above TEKS list */
+  z-index: 2;
+}
+
+/* Keep border visible when focused or active */
+#gradeSelect:focus,
+#gradeSelect:active,
+#subjectSelect:focus,
+#subjectSelect:active {
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+/* === Responsive overrides for smaller screens ONLY === */
+@media (max-width: 1400px) {
+  /* Drop the panel above content so the main column isn't squeezed */
+  #selectedTEKSContainer {
+    position: static;
+    width: auto;
+    margin: 0 0 16px 0;
+  }
+
+  /* Turn the vertical stack into a single flex row that can wrap */
+  #selectedTEKSContainer .controls-row {
+    display: flex !important;           /* override inline 'display:flex' (kept) */
+    flex-direction: row !important;     /* override inline 'flex-direction: column' */
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  /* Make each of the 3 inner wrappers compact flex groups */
+  #selectedTEKSContainer .controls-row > div {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Keep Lesson Plan button tight with its time selector */
+  #lessonDurationSelect {
+    min-width: 72px;
+    height: 28px;
+  }
+
+  /* Put all generate actions together on the left... */
+  #selectedTEKSContainer .controls-row > div:last-child {
+    justify-content: flex-start !important; /* undo its inline space-between */
+    gap: 8px;
+  }
+
+  /* ...and push Clear All all the way to the right edge */
+  #clearSelectedBtn {
+    margin-left: auto;
+  }
+
+  /* Unify heights so everything aligns nicely */
+  #selectedTEKSContainer .action-btn {
+    height: 28px;
+  }
+}
+
+/***** Generating Loader (timing‑tunable) *****/
+.gen-modal.hidden { display: none !important; }
+.gen-modal { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; background: rgba(17, 24, 39, .35); backdrop-filter: blur(1.5px);
+  /* tweakable speeds */
+  --gen-spin-s: .9s;      /* spinner speed */
+  --gen-dots-s: 1s;       /* dots cadence */
+  --gen-bar-s: 1.4s;      /* bar sweep */
+  --gen-pop-s: .16s;      /* card pop-in */
+}
+.gen-card { width: 320px; max-width: calc(100vw - 2rem); padding: 14px 14px 10px; border-radius: 14px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.18); animation: gen-pop var(--gen-pop-s) ease-out; }
+.gen-row { display: flex; gap: 12px; align-items: center; }
+.gen-title { font-weight: 700; font-size: 15px; line-height: 1.2; color: #111827; }
+.gen-sub { font-size: 12px; color: #6b7280; margin-top: 2px; min-height: 16px; }
+.gen-spinner { flex: 0 0 auto; }
+.gen-spinner .track { stroke: #e5e7eb; }
+.gen-spinner .arc { stroke: #3b82f6; transform-origin: 12px 12px; animation: gen-spin var(--gen-spin-s) linear infinite; stroke-dasharray: 60; stroke-dashoffset: 40; stroke-linecap: round; }
+.gen-dots::after { content: '…'; animation: gen-dots var(--gen-dots-s) steps(4, end) infinite; }
+.gen-bar { height: 4px; width: 100%; background: #eef2ff; border-radius: 999px; overflow: hidden; margin-top: 10px; }
+.gen-bar-fill { height: 100%; width: 40%; background: #3b82f6; animation: gen-bar var(--gen-bar-s) ease-in-out infinite; border-radius: inherit; }
+
+/* success / error states */
+.gen-card.success .arc { stroke: #10b981; animation: none; stroke-dashoffset: 0; }
+.gen-card.error   .arc { stroke: #ef4444; animation: none; stroke-dashoffset: 0; }
+.gen-card.success .gen-bar-fill { background: #10b981; animation: none; width: 100%; }
+.gen-card.error   .gen-bar-fill { background: #ef4444; animation: none; width: 100%; }
+
+/* NEW: keep assessment preview hidden until content is ready */
+#assessmentPreviewModal.defer-open { display: none !important; }
+/* Keep Objectives preview hidden until content is ready */
+#aiModal.defer-open { display: none !important; }
+
+@keyframes gen-pop { from { transform: scale(.97); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+@keyframes gen-spin { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+@keyframes gen-dots { 0% { content: '' } 25% { content: '.' } 50% { content: '..' } 75% { content: '...' } 100% { content: '' } }
+@keyframes gen-bar { 0% { transform: translateX(-60%) } 50% { transform: translateX(0%) } 100% { transform: translateX(110%) } }
+
+/* accessibility: calmer motion when requested */
+@media (prefers-reduced-motion: reduce) {
+  .gen-card { animation-duration: .01ms; animation-iteration-count: 1; }
+  .gen-spinner .arc { animation: none; }
+  .gen-dots::after { animation: none; content: '…'; }
+  .gen-bar-fill { animation: none; width: 55%; }
+}

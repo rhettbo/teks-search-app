@@ -1,0 +1,28 @@
+{
+  "name": "teks_search_app_live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TEKS search + lesson/assessment generator",
+  "main": "generate.js",
+  "scripts": {
+    "start": "node generate.js"
+  },
+  "engines": {
+    "node": ">=18 <23"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "fuzzyset.js": "^1.0.7",
+    "google-auth-library": "^9.14.2",
+    "googleapis": "^154.1.0",
+    "multer": "^2.0.2",
+    "openai": "^5.12.2",
+    "pdf-parse": "^1.1.1",
+    "puppeteer": "^24.16.0",
+    "string-similarity": "^4.0.4"
+  }
+}
