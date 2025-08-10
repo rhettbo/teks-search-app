@@ -108,17 +108,44 @@ const embeddingsPath = path.join(__dirname, "teks_embeddings.json");
 const EMBEDDINGS_URL = process.env.EMBEDDINGS_URL || "";
 
 async function ensureEmbeddings() {
+  const EMBED_URL = process.env.EMBEDDINGS_URL;
   try {
     if (fs.existsSync(embeddingsPath)) {
+      // Load local JSON if already present
       const raw = fs.readFileSync(embeddingsPath, "utf8");
       teksEmbeddings = JSON.parse(raw);
       console.log(`📄 Loaded ${teksEmbeddings.length} TEKS embeddings (local file)`);
-    } else if (EMBEDDINGS_URL) {
+    } else if (EMBED_URL) {
       console.log("⬇️  Downloading teks_embeddings.json from EMBEDDINGS_URL…");
-      const resp = await axios.get(EMBEDDINGS_URL, { responseType: "arraybuffer" });
-      fs.writeFileSync(embeddingsPath, Buffer.from(resp.data));
-      const raw = fs.readFileSync(embeddingsPath, "utf8");
-      teksEmbeddings = JSON.parse(raw);
+
+      // Detect extension from the URL path only (ignore ?query)
+      const { pathname } = new URL(EMBED_URL);
+      const ext = path.extname(pathname).toLowerCase();
+
+      // Always download as binary
+      const resp = await axios.get(EMBED_URL, {
+        responseType: "arraybuffer",
+        headers: { Accept: "application/octet-stream" }
+      });
+
+      const buf = Buffer.from(resp.data);
+      const zlib = require("zlib");
+      let outBuf;
+
+      if (ext === ".br") {
+        outBuf = zlib.brotliDecompressSync(buf);
+        console.log("🗜️ Decompressed (.br) file");
+      } else if (ext === ".gz") {
+        outBuf = zlib.gunzipSync(buf);
+        console.log("🗜️ Decompressed (.gz) file");
+      } else {
+        outBuf = buf; // already plain JSON
+        console.log("💾 Saved plain JSON");
+      }
+
+      // Persist the JSON to disk, then parse
+      fs.writeFileSync(embeddingsPath, outBuf);
+      teksEmbeddings = JSON.parse(outBuf.toString("utf8"));
       console.log(`📄 Loaded ${teksEmbeddings.length} TEKS embeddings (downloaded)`);
     } else {
       console.warn("⚠️ teks_embeddings.json not found and EMBEDDINGS_URL not set — semantic search will be empty.");
@@ -127,15 +154,16 @@ async function ensureEmbeddings() {
 
     // 🔤 Build fuzzy dictionary from TEKS standards
     const FuzzySet = require("fuzzyset.js");
-    const corpusWords = teksEmbeddings
-      .flatMap(e => e.standard.split(/\W+/))
+    const corpusWords = (teksEmbeddings || [])
+      .flatMap(e => (e.standard || "").split(/\W+/))
       .map(w => w.toLowerCase())
       .filter(w => w.length > 3);
+
     const dictionary = [...new Set(corpusWords)];
     fuzzy = FuzzySet(dictionary);
     console.log(`📚 Built fuzzy dictionary with ${dictionary.length} unique words`);
   } catch (err) {
-    console.error("❌ Failed to load/build embeddings:", err);
+    console.error("❌ Failed to load/build embeddings:", err?.message || err);
     teksEmbeddings = [];
   }
 }
