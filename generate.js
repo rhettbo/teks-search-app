@@ -97,23 +97,39 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // 🔍 Load TEKS Embeddings
 let teksEmbeddings = [];
 const embeddingsPath = path.join(__dirname, "teks_embeddings.json");
-try {
-  const raw = fs.readFileSync(embeddingsPath, "utf8");
-  teksEmbeddings = JSON.parse(raw);
-  console.log(`📄 Loaded ${teksEmbeddings.length} TEKS embeddings`);
+const EMBEDDINGS_URL = process.env.EMBEDDINGS_URL || "";
 
-  // 🔤 Build fuzzy dictionary from TEKS standards
-  const FuzzySet = require('fuzzyset.js');
-  const corpusWords = teksEmbeddings
-    .flatMap(e => e.standard.split(/\W+/))
-    .map(w => w.toLowerCase())
-    .filter(w => w.length > 3); // ignore short/noise words
+async function ensureEmbeddings() {
+  try {
+    if (fs.existsSync(embeddingsPath)) {
+      const raw = fs.readFileSync(embeddingsPath, "utf8");
+      teksEmbeddings = JSON.parse(raw);
+      console.log(`📄 Loaded ${teksEmbeddings.length} TEKS embeddings (local file)`);
+    } else if (EMBEDDINGS_URL) {
+      console.log("⬇️  Downloading teks_embeddings.json from EMBEDDINGS_URL…");
+      const resp = await axios.get(EMBEDDINGS_URL, { responseType: "arraybuffer" });
+      fs.writeFileSync(embeddingsPath, Buffer.from(resp.data));
+      const raw = fs.readFileSync(embeddingsPath, "utf8");
+      teksEmbeddings = JSON.parse(raw);
+      console.log(`📄 Loaded ${teksEmbeddings.length} TEKS embeddings (downloaded)`);
+    } else {
+      console.warn("⚠️ teks_embeddings.json not found and EMBEDDINGS_URL not set — semantic search will be empty.");
+      teksEmbeddings = [];
+    }
 
-  const dictionary = [...new Set(corpusWords)];
-  fuzzy = FuzzySet(dictionary);
-  console.log(`📚 Built fuzzy dictionary with ${dictionary.length} unique words`);
-} catch (err) {
-  console.error("❌ Failed to load teks_embeddings.json or build fuzzy dictionary:", err);
+    // 🔤 Build fuzzy dictionary from TEKS standards
+    const FuzzySet = require("fuzzyset.js");
+    const corpusWords = teksEmbeddings
+      .flatMap(e => e.standard.split(/\W+/))
+      .map(w => w.toLowerCase())
+      .filter(w => w.length > 3);
+    const dictionary = [...new Set(corpusWords)];
+    fuzzy = FuzzySet(dictionary);
+    console.log(`📚 Built fuzzy dictionary with ${dictionary.length} unique words`);
+  } catch (err) {
+    console.error("❌ Failed to load/build embeddings:", err);
+    teksEmbeddings = [];
+  }
 }
 
 
@@ -1427,8 +1443,17 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(PORT, () => {
-  const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-  console.log(`🚀 Server running on ${baseUrl}`);
-});
+(async () => {
+  try {
+    await ensureEmbeddings();
+  } catch (e) {
+    console.error("⚠️ Embeddings init problem:", e?.message || e);
+  }
+
+  app.listen(PORT, () => {
+    const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+    console.log(`🚀 Server running on ${baseUrl}`);
+  });
+})();
+
 
