@@ -1,3 +1,13 @@
 .env
 
 teks_embeddings.json
+
+.env
+
+
+# secrets & large artifacts
+.env
+credentials.json
+*.br
+*.gz
+
