@@ -25,7 +25,13 @@ let browser;
     browser = await puppeteer.launch({
       headless: "new",
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || execPath,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",     // important for small container shared memory
+        "--disable-gpu",
+        "--single-process"
+      ],
     });
     console.log("🚀 Puppeteer browser launched");
   } catch (e) {
@@ -586,7 +592,7 @@ const teksString = selectedTEKSList.length
 console.log("📘 TEKS being sent to ELA mode:", teksString);
 
  const BASE_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
- const response = await axios.post(`${BASE_URL}/api/generate-ela-assessment`, {
+const response = await axios.post(`${BASE_URL}/api/generate-ela-assessment`, {
    prompt: `${(source?.content || "").trim()}${teksString}`,
    grade,
    subject,
