@@ -1413,69 +1413,144 @@ app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => 
 });
 
 
-// ▶️ Cloud YouTube Transcription Section using Puppeteer
+const { XMLParser } = require("fast-xml-parser"); // make sure you've `npm i fast-xml-parser`
+
+// tiny sleep helper to replace page.waitForTimeout
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchTimedText(videoId, langs = ["en","en-US","en-GB","en-AU","en-CA","en-IE","en-auto"]) {
+  try {
+    for (const lang of langs) {
+      const url = `https://www.youtube.com/api/timedtext?lang=${encodeURIComponent(lang)}&v=${encodeURIComponent(videoId)}`;
+      const resp = await axios.get(url, { timeout: 10000 });
+      if (typeof resp.data === "string" && resp.data.includes("<transcript")) {
+        const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "" });
+        const xml = parser.parse(resp.data);
+        const textNodes = Array.isArray(xml?.transcript?.text) ? xml.transcript.text : (xml?.transcript?.text ? [xml.transcript.text] : []);
+        const transcript = textNodes.map(t => (typeof t === "string" ? t : (t["#text"] || "")))
+          .map(s => s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&"))
+          .join(" ")
+          .trim();
+        if (transcript && transcript.split(/\s+/).length > 8) return transcript.normalize("NFC");
+      }
+    }
+  } catch {}
+  return null;
+}
 
 app.post("/api/transcribe-youtube", async (req, res) => {
   const { videoId } = req.body;
   console.log("📥 Body received:", req.body);
   if (!videoId) return res.status(400).json({ error: "Missing videoId" });
 
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
-
+  // 1) fast caption fetch (no browser)
   try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+    const timed = await fetchTimedText(videoId);
+    if (timed) {
+      console.log("⚡ timedtext endpoint used");
+      return res.json({ transcript: timed });
+    }
+  } catch (e) {
+    console.warn("timedtext fetch failed:", e.message);
+  }
 
-    // 1️⃣ Click "More" description button
+  // 2) headless fallback
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  let page;
+  try {
+    if (!browser) throw new Error("Puppeteer not initialized");
+    page = await browser.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+    );
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+
+    // try to accept consent if present
+    try {
+      await sleep(1200);
+      await page.evaluate(() => {
+        const all = Array.from(document.querySelectorAll("button, tp-yt-paper-button, yt-button-shape button"));
+        const want = ["i agree","accept all","accept","agree","got it"];
+        const norm = s => s?.toLowerCase().trim();
+        const btn = all.find(b => want.some(w => norm(b.innerText||"").includes(w)));
+        if (btn) btn.click();
+      });
+      await sleep(800);
+    } catch {}
+
+    // expand description (older layout)
     await page.evaluate(() => {
-      const btn = document.querySelector('tp-yt-paper-button#expand');
-      if (btn) btn.click();
+      const expand = document.querySelector('tp-yt-paper-button#expand');
+      if (expand) expand.click();
     });
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await sleep(500);
 
-    // 2️⃣ Click "Show transcript" button
+    // try direct transcript button
     await page.evaluate(() => {
-      const btn = Array.from(document.querySelectorAll("button[aria-label='Show transcript']")).find(el =>
-        el.innerText?.toLowerCase().includes("transcript")
-      );
-      if (btn) btn.click();
+      const byAria = Array.from(document.querySelectorAll("button"))
+        .find(el => el.getAttribute("aria-label")?.toLowerCase().includes("transcript"));
+      if (byAria) byAria.click();
     });
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await sleep(1000);
 
-    // 3️⃣ Wait for transcript panel to appear
-    await page.waitForSelector("ytd-transcript-renderer", { timeout: 5000 });
+    // try overflow menu path → “Show transcript”
+    await page.evaluate(async () => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const overflow = document.querySelector('button[aria-label*="More actions"], #button-shape button[aria-label*="More"]');
+      if (overflow) {
+        overflow.click();
+        await sleep(400);
+        const item = Array.from(document.querySelectorAll("ytd-menu-service-item-renderer"))
+          .find(el => el.innerText?.toLowerCase().includes("transcript"));
+        if (item) {
+          item.click();
+          await sleep(900);
+        }
+      }
+    });
 
-    // 4️⃣ Scrape transcript text from visible panel
+    // wait for any transcript container (more generous than 5s)
+    const containerSelector = [
+      "ytd-transcript-renderer",
+      "ytd-transcript-search-panel-renderer",
+      "ytd-engagement-panel-section-list-renderer"
+    ].join(",");
+
+    // emulate waitForSelector with polling because of layout churn
+    const deadline = Date.now() + 15000;
+    let hasContainer = false;
+    while (Date.now() < deadline) {
+      hasContainer = await page.evaluate((sel) => !!document.querySelector(sel), containerSelector);
+      if (hasContainer) break;
+      await sleep(250);
+    }
+    if (!hasContainer) throw new Error("Transcript UI did not appear in time");
+
+    // scrape with multiple selector fallbacks
     const transcript = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("yt-formatted-string.segment-text"))
-        .map(el => el.innerText.trim())
-        .filter(Boolean)
-        .join(" ");
+      const seen = new Set();
+      const add = (s) => { const t = (s||"").trim(); if (t) seen.add(t); };
+
+      document.querySelectorAll("yt-formatted-string.segment-text").forEach(el => add(el.innerText));
+      document.querySelectorAll("ytd-transcript-segment-renderer div.segment-text").forEach(el => add(el.textContent));
+      document.querySelectorAll("#content ytd-transcript-segment-renderer").forEach(el => add(el.innerText));
+      return Array.from(seen).join(" ");
     });
 
-    await page.close();
+    let cleaned = (transcript || "").normalize("NFC").trim();
+    if (cleaned.charCodeAt(0) === 0xFEFF) cleaned = cleaned.slice(1);
+    const wc = cleaned.split(/\s+/).length;
+    console.log(`📜 Transcript extracted (${wc} words)`);
+    if (wc < 10) return res.status(400).json({ error: "Transcript is too short or empty." });
 
-    // ✅ Normalize & sanitize transcript
-    let cleanedTranscript = transcript.normalize("NFC");
-    if (cleanedTranscript.charCodeAt(0) === 0xFEFF) {
-      cleanedTranscript = cleanedTranscript.slice(1); // Strip BOM if present
-    }
-
-    const wordCount = cleanedTranscript.trim().split(/\s+/).length;
-    console.log(`📜 Transcript extracted (${wordCount} words)`);
-    if (wordCount < 10) {
-      return res.status(400).json({ error: "Transcript is too short or empty." });
-    }
-
-    res.json({ transcript: cleanedTranscript });
-
+    res.json({ transcript: cleaned });
   } catch (err) {
     console.error("❌ Puppeteer error:", err.message);
     res.status(500).json({ error: "Failed to extract transcript." });
+  } finally {
+    try { if (page) await page.close(); } catch {}
   }
 });
-
-
 
 // ✅ Start the server
 const PORT = process.env.PORT || 5000;
@@ -1497,5 +1572,3 @@ app.get("/health", (req, res) => {
     console.log(`🚀 Server running on ${baseUrl}`);
   });
 })();
-
-
