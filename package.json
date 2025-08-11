@@ -11,6 +11,7 @@
     "node": ">=18 <23"
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
@@ -20,6 +21,7 @@
     "fuzzyset.js": "^1.0.7",
     "google-auth-library": "^9.14.2",
     "googleapis": "^154.1.0",
+    "mammoth": "^1.10.0",
     "multer": "^2.0.2",
     "openai": "^5.12.2",
     "pdf-parse": "^1.1.1",

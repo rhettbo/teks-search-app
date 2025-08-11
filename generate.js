@@ -1376,6 +1376,8 @@ if (rebalanced) {
 // ✅ Add this AFTER the previous route — outside and separate
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
+const mammoth  = require("mammoth");     // ← DOCX
+const AdmZip   = require("adm-zip");     // ← PPTX unzip
 const upload = multer(); // In-memory file storage
 
 app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => {
@@ -1383,39 +1385,89 @@ app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => 
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-    const mimetype = file.mimetype;
+    const mimetype = file.mimetype || "";
+    const filename = (file.originalname || "").toLowerCase();
     let text = "";
 
-    if (mimetype === "application/pdf") {
+    // ---- PDF ---------------------------------------------------------------
+    if (mimetype === "application/pdf" || filename.endsWith(".pdf")) {
       try {
         const data = await pdfParse(file.buffer);
-        text = data.text;
+        text = data.text || "";
       } catch (pdfErr) {
         console.warn("⚠️ PDF parse failed, falling back to plain text:", pdfErr.message);
         text = file.buffer.toString("utf-8");
       }
-    } else {
-      // fallback: assume it's plain text (txt, md, etc)
+    }
+
+    // ---- DOCX (Word) -------------------------------------------------------
+    else if (
+      mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      filename.endsWith(".docx")
+    ) {
+      try {
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        text = result.value || "";
+      } catch (docxErr) {
+        console.warn("⚠️ DOCX parse failed, falling back to plain text:", docxErr.message);
+        text = file.buffer.toString("utf-8");
+      }
+    }
+
+    // ---- PPTX (PowerPoint) -------------------------------------------------
+    else if (
+      mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+      filename.endsWith(".pptx")
+    ) {
+      try {
+        const zip = new AdmZip(file.buffer);
+        const entries = zip.getEntries();
+        const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "" });
+
+        const slideXmls = entries
+          .filter(e => /^ppt\/slides\/slide\d+\.xml$/i.test(e.entryName))
+          .sort((a, b) => a.entryName.localeCompare(b.entryName));
+
+        const parts = [];
+        for (const s of slideXmls) {
+          const xml = s.getData().toString("utf-8");
+          const dom = parser.parse(xml);
+          // Collect all <a:t> text nodes (PowerPoint text runs)
+          const collect = (node) => {
+            if (!node || typeof node !== "object") return;
+            for (const k of Object.keys(node)) {
+              const v = node[k];
+              if (k === "a:t" && (typeof v === "string")) parts.push(v);
+              else if (Array.isArray(v)) v.forEach(collect);
+              else if (typeof v === "object") collect(v);
+            }
+          };
+          collect(dom);
+          parts.push("\n\n"); // spacing between slides
+        }
+        text = parts.join(" ").replace(/\s+\n/g, "\n").trim();
+      } catch (pptxErr) {
+        console.warn("⚠️ PPTX parse failed, falling back to plain text:", pptxErr.message);
+        text = file.buffer.toString("utf-8");
+      }
+    }
+
+    // ---- Plain text / fallback --------------------------------------------
+    else {
       text = file.buffer.toString("utf-8");
     }
 
-    // ✅ Normalize Unicode to ensure accented characters render properly
-    text = text.normalize("NFC");
+    // Normalize & clean
+    text = (text || "").normalize("NFC");
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
 
-    // ✅ Strip Byte Order Mark (BOM) if present
-    if (text.charCodeAt(0) === 0xFEFF) {
-      text = text.slice(1);
-    }
-
-    console.log("🧪 First few chars of content:", text.slice(0, 100)); // optional
-
+    console.log("🧪 First few chars of content:", text.slice(0, 100));
     res.json({ content: text.trim() });
   } catch (err) {
     console.error("❌ File processing error:", err);
     res.status(500).json({ error: "Error parsing uploaded file." });
   }
 });
-
 
 const { XMLParser } = require("fast-xml-parser"); // ensure npm i fast-xml-parser
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
