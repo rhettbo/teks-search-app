@@ -30,7 +30,8 @@ let browser;
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",     // important for small container shared memory
         "--disable-gpu",
-        "--single-process"
+        "--single-process",
+        "--lang=en-US" // ⬅️ add this
       ],
     });
     console.log("🚀 Puppeteer browser launched");
@@ -66,6 +67,7 @@ function resetHistory(promptHash) {
 }
 
 const app = express();
+app.set('trust proxy', 1); // Render/Heroku-style proxy; needed for express-rate-limit
 
 // ======= Static + CORS + Rate Limit =======
 const PROD = process.env.NODE_ENV === 'production';
@@ -88,19 +90,21 @@ app.use(cors({
 }));
 
 // Basic rate limit for /api in prod
+const limiter = rateLimit({
+  windowMs: 60_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 if (PROD) {
-  app.use('/api', rateLimit({ windowMs: 60_000, max: 60 }));
+  app.use('/api', limiter);
 }
 
 // Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-// ==========================================
 
-// Optional: rate-limit API calls in production
-if (PROD) {
-  app.use('/api', rateLimit({ windowMs: 60_000, max: 60 }));
-}
 // ===========================================
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -1413,10 +1417,8 @@ app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => 
 });
 
 
-const { XMLParser } = require("fast-xml-parser"); // make sure you've `npm i fast-xml-parser`
-
-// tiny sleep helper to replace page.waitForTimeout
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const { XMLParser } = require("fast-xml-parser"); // ensure npm i fast-xml-parser
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 async function fetchTimedText(videoId, langs = ["en","en-US","en-GB","en-AU","en-CA","en-IE","en-auto"]) {
   try {
@@ -1426,12 +1428,12 @@ async function fetchTimedText(videoId, langs = ["en","en-US","en-GB","en-AU","en
       if (typeof resp.data === "string" && resp.data.includes("<transcript")) {
         const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "" });
         const xml = parser.parse(resp.data);
-        const textNodes = Array.isArray(xml?.transcript?.text) ? xml.transcript.text : (xml?.transcript?.text ? [xml.transcript.text] : []);
-        const transcript = textNodes.map(t => (typeof t === "string" ? t : (t["#text"] || "")))
+        const nodes = Array.isArray(xml?.transcript?.text) ? xml.transcript.text : (xml?.transcript?.text ? [xml.transcript.text] : []);
+        const out = nodes.map(t => (typeof t === "string" ? t : (t["#text"] || "")))
           .map(s => s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&"))
           .join(" ")
           .trim();
-        if (transcript && transcript.split(/\s+/).length > 8) return transcript.normalize("NFC");
+        if (out && out.split(/\s+/).length > 8) return out.normalize("NFC");
       }
     }
   } catch {}
@@ -1443,7 +1445,7 @@ app.post("/api/transcribe-youtube", async (req, res) => {
   console.log("📥 Body received:", req.body);
   if (!videoId) return res.status(400).json({ error: "Missing videoId" });
 
-  // 1) fast caption fetch (no browser)
+  // 1) Fast path: captions API (no browser)
   try {
     const timed = await fetchTimedText(videoId);
     if (timed) {
@@ -1454,70 +1456,82 @@ app.post("/api/transcribe-youtube", async (req, res) => {
     console.warn("timedtext fetch failed:", e.message);
   }
 
-  // 2) headless fallback
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  // 2) Headless fallback
+  const url = `https://www.youtube.com/watch?v=${videoId}&hl=en&persist_hl=1&bpctr=9999999999`;
   let page;
   try {
     if (!browser) throw new Error("Puppeteer not initialized");
     page = await browser.newPage();
+
+    await page.setExtraHTTPHeaders({ "Accept-Language": "en-US,en;q=0.9" });
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
     );
+    await page.setViewport({ width: 1280, height: 800 });
+
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
 
-    // try to accept consent if present
+    // Handle consent if present
     try {
       await sleep(1200);
       await page.evaluate(() => {
         const all = Array.from(document.querySelectorAll("button, tp-yt-paper-button, yt-button-shape button"));
         const want = ["i agree","accept all","accept","agree","got it"];
-        const norm = s => s?.toLowerCase().trim();
-        const btn = all.find(b => want.some(w => norm(b.innerText||"").includes(w)));
+        const norm = s => (s || "").toLowerCase().trim();
+        const btn = all.find(b => want.some(w => norm(b.innerText).includes(w)));
         if (btn) btn.click();
       });
       await sleep(800);
     } catch {}
 
-    // expand description (older layout)
+    // Expand description
     await page.evaluate(() => {
       const expand = document.querySelector('tp-yt-paper-button#expand');
       if (expand) expand.click();
     });
     await sleep(500);
 
-    // try direct transcript button
+    // Try direct "Transcript" button
     await page.evaluate(() => {
-      const byAria = Array.from(document.querySelectorAll("button"))
+      const direct = Array.from(document.querySelectorAll("button"))
         .find(el => el.getAttribute("aria-label")?.toLowerCase().includes("transcript"));
-      if (byAria) byAria.click();
+      if (direct) direct.click();
     });
     await sleep(1000);
 
-    // try overflow menu path → “Show transcript”
+    // Overflow menu paths → “Show transcript”
     await page.evaluate(async () => {
-      const sleep = ms => new Promise(r => setTimeout(r, ms));
-      const overflow = document.querySelector('button[aria-label*="More actions"], #button-shape button[aria-label*="More"]');
+      const snooze = ms => new Promise(r => setTimeout(r, ms));
+
+      // Player action menu
+      let overflow = document.querySelector('button[aria-label*="More actions"], #button-shape button[aria-label*="More"]');
       if (overflow) {
         overflow.click();
-        await sleep(400);
-        const item = Array.from(document.querySelectorAll("ytd-menu-service-item-renderer"))
+        await snooze(400);
+        let item = Array.from(document.querySelectorAll("ytd-menu-service-item-renderer, tp-yt-paper-item"))
           .find(el => el.innerText?.toLowerCase().includes("transcript"));
-        if (item) {
-          item.click();
-          await sleep(900);
-        }
+        if (item) { item.click(); await snooze(900); }
+      }
+
+      // Three-dots under title/description
+      overflow = document.querySelector('#menu button[aria-label*="More actions"]') || document.querySelector('#actions ytd-button-renderer button');
+      if (overflow) {
+        overflow.click();
+        await snooze(400);
+        let item = Array.from(document.querySelectorAll("ytd-menu-service-item-renderer, tp-yt-paper-item"))
+          .find(el => el.innerText?.toLowerCase().includes("transcript"));
+        if (item) { item.click(); await snooze(900); }
       }
     });
 
-    // wait for any transcript container (more generous than 5s)
+    // Poll for any transcript container
     const containerSelector = [
       "ytd-transcript-renderer",
       "ytd-transcript-search-panel-renderer",
       "ytd-engagement-panel-section-list-renderer"
     ].join(",");
 
-    // emulate waitForSelector with polling because of layout churn
-    const deadline = Date.now() + 15000;
+    const deadline = Date.now() + 20000;
     let hasContainer = false;
     while (Date.now() < deadline) {
       hasContainer = await page.evaluate((sel) => !!document.querySelector(sel), containerSelector);
@@ -1526,11 +1540,10 @@ app.post("/api/transcribe-youtube", async (req, res) => {
     }
     if (!hasContainer) throw new Error("Transcript UI did not appear in time");
 
-    // scrape with multiple selector fallbacks
+    // Scrape segments
     const transcript = await page.evaluate(() => {
       const seen = new Set();
-      const add = (s) => { const t = (s||"").trim(); if (t) seen.add(t); };
-
+      const add = (s) => { s = (s||"").trim(); if (s) seen.add(s); };
       document.querySelectorAll("yt-formatted-string.segment-text").forEach(el => add(el.innerText));
       document.querySelectorAll("ytd-transcript-segment-renderer div.segment-text").forEach(el => add(el.textContent));
       document.querySelectorAll("#content ytd-transcript-segment-renderer").forEach(el => add(el.innerText));
@@ -1539,13 +1552,19 @@ app.post("/api/transcribe-youtube", async (req, res) => {
 
     let cleaned = (transcript || "").normalize("NFC").trim();
     if (cleaned.charCodeAt(0) === 0xFEFF) cleaned = cleaned.slice(1);
+
     const wc = cleaned.split(/\s+/).length;
     console.log(`📜 Transcript extracted (${wc} words)`);
-    if (wc < 10) return res.status(400).json({ error: "Transcript is too short or empty." });
+    if (wc < 10) {
+      return res.status(404).json({ error: "No transcript/captions available for this video." });
+    }
 
     res.json({ transcript: cleaned });
   } catch (err) {
     console.error("❌ Puppeteer error:", err.message);
+    if (/did not appear|timeout/i.test(err.message)) {
+      return res.status(404).json({ error: "Transcript UI not available. This video may not provide a transcript in your region/language." });
+    }
     res.status(500).json({ error: "Failed to extract transcript." });
   } finally {
     try { if (page) await page.close(); } catch {}
