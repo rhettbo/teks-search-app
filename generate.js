@@ -66,6 +66,18 @@ function resetHistory(promptHash) {
   outputHistoryMap.delete(promptHash);
 }
 
+function isBinaryBuffer(buf, sampleBytes = 1024) {
+  const len = Math.min(buf.length, sampleBytes);
+  let nonPrintable = 0;
+  for (let i = 0; i < len; i++) {
+    const c = buf[i];
+    // printable ascii + common whitespace
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c <= 126)) continue;
+    nonPrintable++;
+  }
+  return nonPrintable / len > 0.3; // >30% non-printables => binary
+}
+
 const app = express();
 app.set('trust proxy', 1); // Render/Heroku-style proxy; needed for express-rate-limit
 
@@ -1390,15 +1402,37 @@ app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => 
     let text = "";
 
     // ---- PDF ---------------------------------------------------------------
-    if (mimetype === "application/pdf" || filename.endsWith(".pdf")) {
-      try {
-        const data = await pdfParse(file.buffer);
-        text = data.text || "";
-      } catch (pdfErr) {
-        console.warn("⚠️ PDF parse failed, falling back to plain text:", pdfErr.message);
-        text = file.buffer.toString("utf-8");
-      }
+if (mimetype === "application/pdf" || filename.endsWith(".pdf")) {
+  try {
+    const data = await pdfParse(file.buffer);
+
+    // Encrypted PDFs typically throw; if they don't, data.info may hint
+    const txt = (data.text || "").trim();
+
+    // Handle “scanned image PDF” (no selectable text)
+    if (!txt || txt.length < 40) {
+      return res.status(400).json({
+        error: "This PDF has no selectable text (likely a scanned image). Please upload an unscanned PDF or the original DOCX/PPTX, or run OCR.",
+        code: "PDF_NO_TEXT"
+      });
     }
+
+    text = txt;
+  } catch (pdfErr) {
+    // Password/encryption cases
+    if (/password|encrypted|security/i.test(pdfErr?.message || "")) {
+      return res.status(400).json({
+        error: "This PDF appears to be password-protected or encrypted. Remove the password or export an unprotected PDF.",
+        code: "PDF_ENCRYPTED"
+      });
+    }
+    // Unknown PDF parse issue
+    return res.status(400).json({
+      error: "We couldn't read that PDF. Try exporting a fresh copy or upload the original DOCX/PPTX.",
+      code: "PDF_PARSE_FAILED"
+    });
+  }
+}
 
     // ---- DOCX (Word) -------------------------------------------------------
     else if (
@@ -1452,10 +1486,39 @@ app.post("/api/upload-file-preview", upload.single("file"), async (req, res) => 
       }
     }
 
-    // ---- Plain text / fallback --------------------------------------------
-    else {
-      text = file.buffer.toString("utf-8");
-    }
+    // ---- Legacy Word (.doc) ------------------------------------------------
+else if (
+  mimetype === "application/msword" ||
+  filename.endsWith(".doc")
+) {
+  return res.status(415).json({
+    error: "Legacy .doc files aren’t supported. Please save as .docx and upload again.",
+    code: "UNSUPPORTED_LEGACY_DOC"
+  });
+}
+
+// ---- Legacy PowerPoint (.ppt) ------------------------------------------
+else if (
+  mimetype === "application/vnd.ms-powerpoint" ||
+  filename.endsWith(".ppt")
+) {
+  return res.status(415).json({
+    error: "Legacy .ppt files aren’t supported. Please save as .pptx and upload again.",
+    code: "UNSUPPORTED_LEGACY_PPT"
+  });
+}
+
+    // ---- Plain text / generic fallback ------------------------------------
+else {
+  // If this looks binary, stop and ask for a supported format
+  if (isBinaryBuffer(file.buffer)) {
+    return res.status(415).json({
+      error: "This file looks like binary data and doesn’t contain readable text. Upload a text-based format (PDF with selectable text, DOCX, PPTX, TXT).",
+      code: "BINARY_NO_TEXT"
+    });
+  }
+  text = file.buffer.toString("utf-8");
+}
 
     // Normalize & clean
     text = (text || "").normalize("NFC");

@@ -1063,29 +1063,60 @@ async function generateAssessmentPreview() {
     source.content = Array.from(selectedTEKS).map(t => JSON.parse(t).standard).join("\n");
 
   } else if (sourceType === "upload") {
-    if (!files || files.length === 0) {
-      previewTextDiv.textContent = "❌ No files uploaded.";
-      previewModal.classList.remove("hidden"); previewModal.classList.add("active");
-      await LoaderGuard.finish('assessment', loaderId, { ok: false });
-      return;
+  if (!files || files.length === 0) {
+    previewTextDiv.textContent = "❌ No files uploaded.";
+    previewModal.classList.remove("hidden"); 
+    previewModal.classList.add("active");
+    await LoaderGuard.finish('assessment', loaderId, { ok: false });
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("file", files[0]);
+
+    const uploadRes = await fetch("/api/upload-file-preview", {
+      method: "POST",
+      body: formData
+    });
+
+    // Try to parse JSON (even for non-2xx to read error payload)
+    let uploadJson = {};
+    try { uploadJson = await uploadRes.json(); } catch {}
+
+    if (!uploadRes.ok) {
+      // Map server-side error codes to clear messages
+      const code = uploadJson?.code;
+      const msgMap = {
+        PDF_ENCRYPTED: "This PDF is password-protected. Please remove the password or upload the DOCX/PPTX source.",
+        PDF_NO_TEXT: "That PDF has no selectable text (likely a scanned image). Upload the original DOCX/PPTX or an OCR’d PDF.",
+        UNSUPPORTED_LEGACY_DOC: "Legacy .doc isn’t supported. Please save as .docx and upload again.",
+        UNSUPPORTED_LEGACY_PPT: "Legacy .ppt isn’t supported. Please save as .pptx and upload again.",
+        BINARY_NO_TEXT: "This file looks like binary data with no readable text. Upload a text-based file (PDF with selectable text, DOCX, PPTX, TXT)."
+      };
+      const fallback = uploadJson?.error || `Upload failed (${uploadRes.status})`;
+      throw new Error(msgMap[code] || fallback);
     }
-    try {
-      const formData = new FormData();
-      formData.append("file", files[0]);
-      const uploadRes = await fetch("/api/upload-file-preview", { 
-        method: "POST", 
-        body: formData 
-     });
-      const uploadJson = await uploadRes.json();
-      if (!uploadJson?.content) throw new Error("No content returned from file upload.");
-      source.content = uploadJson.content;
-    } catch (err) {
-      console.error("❌ File upload error:", err);
-      previewTextDiv.textContent = `❌ ${err.message}`;
-      previewModal.classList.remove("hidden"); previewModal.classList.add("active");
-      await LoaderGuard.finish('assessment', loaderId, { ok: false });
-      return;
+
+    const text = uploadJson?.content;
+    if (!text || typeof text !== "string" || text.trim().length < 20) {
+      throw new Error(
+        "We couldn't extract readable text from that file. Try a PDF with selectable text, a DOCX, or a PPTX."
+      );
     }
+
+    // Success: pass extracted text forward
+    source.content = text.trim();
+
+  } catch (err) {
+    console.error("❌ File upload error:", err);
+    previewTextDiv.textContent = `❌ ${err.message}`;
+    previewModal.classList.remove("hidden"); 
+    previewModal.classList.add("active");
+    await LoaderGuard.finish('assessment', loaderId, { ok: false });
+    return;
+  }
+}
 
   } else if (sourceType === "doc") {
   const link = (googleDocLink || "").trim();
