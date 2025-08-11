@@ -1116,7 +1116,6 @@ async function generateAssessmentPreview() {
     await LoaderGuard.finish('assessment', loaderId, { ok: false });
     return;
   }
-}
 
   } else if (sourceType === "doc") {
   const link = (googleDocLink || "").trim();
