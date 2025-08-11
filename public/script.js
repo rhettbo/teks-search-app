@@ -1197,17 +1197,43 @@ async function generateAssessmentPreview() {
 async function confirmCreateAssessment() {
   if (!latestAssessmentData?.parsedQuestions) return;
 
-    const res = await fetch("/api/create-form", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: latestAssessmentData.formTitle,
-      questions: latestAssessmentData.parsedQuestions
-    })
+  // keep preview visible; just blur it like lessons
+  const previewModal = document.getElementById("assessmentPreviewModal");
+  previewModal?.classList.add("modal-blur");
+
+  // start shared loader with your custom copy
+  const loaderId = LoaderGuard.start("assessment", {
+    main: "Building Assessment",
+    sub: "Generating Google Form",
+    minShowMs: 700
   });
 
-  const { url } = await res.json();
-  if (url) window.open(url, "_blank");
+  try {
+    const res = await fetch("/api/create-form", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: latestAssessmentData.formTitle,
+        questions: latestAssessmentData.parsedQuestions
+      })
+    });
+
+    const { url } = await res.json();
+
+    // open the Form and immediately finish/hide loader
+    if (url) {
+      window.open(url, "_blank");
+      await LoaderGuard.finish("assessment", loaderId, { ok: true });
+    } else {
+      await LoaderGuard.finish("assessment", loaderId, { ok: false });
+    }
+  } catch (err) {
+    console.error("❌ Error creating Google Form:", err);
+    await LoaderGuard.finish("assessment", loaderId, { ok: false });
+  } finally {
+    // unblur either way
+    previewModal?.classList.remove("modal-blur");
+  }
 }
 
 

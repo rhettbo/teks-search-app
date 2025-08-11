@@ -514,3 +514,8 @@ Generate Assessment Menu
   .gen-dots::after { animation: none; content: '…'; }
   .gen-bar-fill { animation: none; width: 55%; }
 }
+
+/* Blur the preview content while the loader is up */
+.modal.modal-blur .modal-content {
+  filter: blur(3px);
+}
