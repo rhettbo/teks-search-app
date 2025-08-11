@@ -76,8 +76,16 @@ function updateSubjectDropdown() {
 }
 
 function extractGoogleDocId(url) {
-  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : null;
+  // Only match Google Docs: .../document/d/<ID>/...
+  const m = url.match(/document\/d\/([A-Za-z0-9-_]+)/);
+  return m ? m[1] : null;
+}
+
+// --- Google Slides helpers ---
+function extractGoogleSlidesId(url) {
+  // handles .../presentation/d/<ID>/...
+  const m = url.match(/presentation\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : null;
 }
 
 async function fetchGoogleDocText(docId) {
@@ -85,6 +93,45 @@ async function fetchGoogleDocText(docId) {
   const response = await fetch(exportUrl);
   if (!response.ok) throw new Error("Failed to fetch Google Doc");
   return await response.text();
+}
+
+// --- Google Slides helpers ---
+function extractGoogleSlidesId(url) {
+  // Match Slides: .../presentation/d/<ID>/...
+  const m = url.match(/presentation\/d\/([A-Za-z0-9-_]+)/);
+  return m ? m[1] : null;
+}
+
+async function fetchGoogleSlidesText(presentationId) {
+  // Try both common text export patterns; accept first non-empty
+  const endpoints = [
+    `https://docs.google.com/presentation/d/${presentationId}/export/txt`,
+    `https://docs.google.com/presentation/d/${presentationId}/export?format=txt`,
+  ];
+  let lastErr;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { credentials: "omit" });
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim()) return txt;
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(lastErr?.message || "Failed to fetch Google Slides text");
+}
+
+// Unified resolver: prefer Slides match first, then Docs
+async function fetchDriveTextFromLink(link) {
+  const slideId = extractGoogleSlidesId(link);
+  if (slideId) return await fetchGoogleSlidesText(slideId);
+
+  const docId = extractGoogleDocId(link);
+  if (docId) return await fetchGoogleDocText(docId);
+
+  throw new Error("Please paste a valid Google Docs or Google Slides URL.");
 }
 
 async function fetchYouTubeTranscript(videoId) {
@@ -1041,28 +1088,31 @@ async function generateAssessmentPreview() {
     }
 
   } else if (sourceType === "doc") {
-    if (!googleDocLink) {
-      previewTextDiv.textContent = "❌ Please paste a Google Doc link.";
-      previewModal.classList.remove("hidden"); previewModal.classList.add("active");
-      await LoaderGuard.finish('assessment', loaderId, { ok: false });
-      return;
+  const link = (googleDocLink || "").trim();
+  if (!link) {
+    previewTextDiv.textContent = "❌ Please paste a Google Docs or Google Slides link.";
+    previewModal.classList.remove("hidden");
+    previewModal.classList.add("active");
+    await LoaderGuard.finish('assessment', loaderId, { ok: false });
+    return;
+  }
+
+  try {
+    if (typeof GenLoader?.update === "function") {
+      GenLoader.update(undefined, "Fetching Drive content…");
     }
-    const docId = extractGoogleDocId(googleDocLink);
-    if (!docId) {
-      previewTextDiv.textContent = "❌ Invalid Google Doc link format.";
-      previewModal.classList.remove("hidden"); previewModal.classList.add("active");
-      await LoaderGuard.finish('assessment', loaderId, { ok: false });
-      return;
-    }
-    try {
-      source.content = await fetchGoogleDocText(docId);
-    } catch (err) {
-      console.error("❌ Failed to fetch Google Doc:", err);
-      previewTextDiv.textContent = "❌ Could not retrieve Google Doc content.";
-      previewModal.classList.remove("hidden"); previewModal.classList.add("active");
-      await LoaderGuard.finish('assessment', loaderId, { ok: false });
-      return;
-    }
+    // ✅ Works for both Docs and Slides
+    source.content = await fetchDriveTextFromLink(link);
+  } catch (err) {
+    console.error("❌ Failed to fetch Drive content:", err);
+    previewTextDiv.textContent = `❌ Could not retrieve content. ${
+      err?.message || "Ensure sharing is set to “Anyone with the link can view.”"
+    }`;
+    previewModal.classList.remove("hidden");
+    previewModal.classList.add("active");
+    await LoaderGuard.finish('assessment', loaderId, { ok: false });
+    return;
+  }
 
   } else if (sourceType === "youtube") {
     if (!youtubeLink) {
