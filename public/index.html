@@ -2,19 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="data:," />
   <title>TEKS App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
   <script>
+    // MathJax config must be defined before loading the script
     window.MathJax = {
       tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
       svg: { fontCache: 'global' }
     };
-   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  </script>
+
+  <!-- Local vendor scripts (no CDNs) -->
+  <script src="/vendor/papaparse/papaparse.min.js" defer></script>
+  <script src="/vendor/fuse/fuse.min.js" defer></script>
+  <script src="/vendor/mathjax/tex-svg.js" defer></script>
 </head>
+
 <body>
 
   <div id="selectedTEKSContainer" style="display:none;">
