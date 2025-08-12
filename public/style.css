@@ -519,3 +519,25 @@ Generate Assessment Menu
 .modal.modal-blur .modal-content {
   filter: blur(3px);
 }
+
+/* === TEKS controls: uniform button widths (exclude Clear All) === */
+
+/* Default / wide screens: fixed uniform width for all TEKS buttons except Clear All */
+#selectedTEKSContainer button.action-btn:not(#clearSelectedBtn) {
+  width: 155px;           /* pick a tidy uniform width */
+}
+
+/* Small screens: keep buttons equal width without wrapping issues */
+@media (max-width: 640px) {
+  /* Let the left pair (Assessment + Flashcards) and other groups share space evenly */
+  #selectedTEKSContainer button.action-btn:not(#clearSelectedBtn) {
+    width: auto;          /* override the fixed width */
+    flex: 1 1 0;          /* equal widths within their flex rows */
+  }
+
+  /* Make sure the wrappers allow their children to flex nicely */
+  #selectedTEKSContainer .controls-row > div,
+  #selectedTEKSContainer .controls-row > div > div {
+    min-width: 0;         /* avoid overflow from long labels */
+  }
+}
