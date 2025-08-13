@@ -728,6 +728,7 @@ ${["mixed", "multiple"].includes(type) ? `
 - Questions must be clearly based on the source content
 - Include STAAR-style distractors that are plausible but clearly incorrect
 - Use TEKS-aligned vocabulary-in-context when appropriate
+- In ELA, reading, and English, focus on comprehension, analysis, and literary elements. Stick to the selected standards
 - In Science and Social Studies, emphasize cause/effect, comparison, reasoning, and conceptual clarity
 - In Math, favor problem-solving and multi-step reasoning over isolated computation
 - For Short Answer, require synthesis or explanation, not just recall
