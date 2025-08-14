@@ -1342,6 +1342,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const mixedOptions = document.getElementById("mixedOptions");
   const teacherPromptSection = document.getElementById("teacherPromptSection");
 
+  // Wipes all user-provided source inputs and clears YT cache
+function clearAllSourceInputs() {
+  const fileInput   = document.getElementById("assessmentFiles");
+  const docInput    = document.getElementById("googleDocLink");
+  const ytInput     = document.getElementById("youtubeLink");
+  const teacherText = document.getElementById("teacherPromptInput");
+
+  if (fileInput)   fileInput.value   = "";
+  if (docInput)    docInput.value    = "";
+  if (ytInput)     ytInput.value     = "";
+  if (teacherText) teacherText.value = "";
+
+  ytTranscriptCache.clear();
+  lastYouTubeId = null;
+}
+
   // Auto-expand Teacher Prompt textarea
 const teacherPromptInput = document.getElementById("teacherPromptInput");
 if (teacherPromptInput) {
@@ -1365,7 +1381,11 @@ if (teacherPromptInput) {
   }
   };
 
-  sourceSelect?.addEventListener("change", updateSourceFields);
+  sourceSelect?.addEventListener("change", () => {
+  // As soon as a different source is picked, wipe all previous inputs
+  clearAllSourceInputs();
+  updateSourceFields();
+});
 
     const ytInput = document.getElementById("youtubeLink");
   ytInput?.addEventListener("input", () => {
@@ -1398,9 +1418,15 @@ if (teacherPromptInput) {
   });
 
   closeBtn?.addEventListener("click", () => {
-    modal?.classList.add("hidden");
-    modal?.classList.remove("active");
-  });
+  modal?.classList.add("hidden");
+  modal?.classList.remove("active");
+
+  // Reset to defaults on exit
+  const sourceSelect = document.getElementById("sourceTypeSelect");
+  if (sourceSelect) sourceSelect.value = "teks";
+  clearAllSourceInputs();
+  updateSourceFields();
+});
 
   closePreviewBtn?.addEventListener("click", () => {
   previewModal?.classList.add("hidden");
@@ -1408,14 +1434,20 @@ if (teacherPromptInput) {
 });
 
   window.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.classList.add("hidden");
-      modal.classList.remove("active");
-    }
-    if (e.target === previewModal) {
-      previewModal.classList.add("hidden");
-    }
-  });
+  if (e.target === modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("active");
+
+    // Reset to defaults on exit (backdrop close)
+    const sourceSelect = document.getElementById("sourceTypeSelect");
+    if (sourceSelect) sourceSelect.value = "teks";
+    clearAllSourceInputs();
+    updateSourceFields();
+  }
+  if (e.target === previewModal) {
+    previewModal.classList.add("hidden");
+  }
+});
 
 const essayStyleSection = document.getElementById("essayStyleSection");
 
