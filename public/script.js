@@ -1340,16 +1340,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const docSection = document.getElementById("docLinkSection");
   const youtubeSection = document.getElementById("youtubeLinkSection");
   const mixedOptions = document.getElementById("mixedOptions");
+  const teacherPromptSection = document.getElementById("teacherPromptSection");
+
+  // Auto-expand Teacher Prompt textarea
+const teacherPromptInput = document.getElementById("teacherPromptInput");
+if (teacherPromptInput) {
+  teacherPromptInput.addEventListener("input", function () {
+    this.style.height = "auto"; // reset before recalculating
+    this.style.height = this.scrollHeight + "px";
+  });
+}
 
   const updateSourceFields = () => {
     if (!sourceSelect) return;
     const val = sourceSelect.value;
     fileSection?.classList.toggle("hidden", val !== "upload");
     docSection?.classList.toggle("hidden", val !== "doc");
+    teacherPromptSection?.classList.toggle("hidden", val !== "teacherprompt");
     youtubeSection?.classList.toggle("hidden", val !== "youtube");
       // If switching away from YouTube, drop any cached transcript
-    const teacherPromptSection = document.getElementById("teacherPromptSection");
-    teacherPromptSection?.classList.toggle("hidden", val !== "teacherprompt");
   if (val !== "youtube") {
     ytTranscriptCache.clear();
     lastYouTubeId = null;
@@ -1446,15 +1455,6 @@ typeSelect?.addEventListener("change", updateAssessmentFields);
     }
   });
 });
-
-// Auto-expand Teacher Prompt textarea
-const teacherPromptInput = document.getElementById("teacherPromptInput");
-if (teacherPromptInput) {
-  teacherPromptInput.addEventListener("input", function () {
-    this.style.height = "auto"; // reset before recalculating
-    this.style.height = this.scrollHeight + "px";
-  });
-}
 
 /** Generating Loader controller with tunable timing */
 const GenLoader = (() => {
