@@ -675,6 +675,27 @@ The following are the TEKS standards to be addressed in this assessment. Use the
   }
 }
 
+// --- TEKS PRIORITY (always present if user selected TEKS) ---
+const teksPriorityBlock = (() => {
+  if (!Array.isArray(selectedTEKSList) || selectedTEKSList.length === 0) return "";
+  const list = selectedTEKSList
+    .map(t => t?.standard)
+    .filter(Boolean)
+    .map(s => `- ${s}`)
+    .join("\n");
+  if (!list) return "";
+  return `
+PRIMARY TEKS (Use these as controlling criteria for EVERY item):
+${list}
+
+Enforcement:
+- Every question MUST directly assess one or more TEKS above.
+- If the instructional content and TEKS ever conflict, PREFER the TEKS.
+- Do not drift into general comprehension unless it explicitly advances the TEKS.
+- If a question is not clearly tied to a TEKS statement, do not include it.
+`;
+})();
+
   // 🔧 Dynamically construct instructions based on selected formats
   let formatBlock = "";
   if (type === "mixed" && formats.length) {
@@ -702,6 +723,13 @@ if (approxTokenCount > MAX_TOKENS_ALLOWED) {
 const prompt = `
 You are an expert teacher creating a ${type} assessment${type === "essay" && essayStyle ? ` in the style of a ${essayStyle} prompt` : ""} for Grade ${grade} ${subject}.
 
+PRIMARY OBJECTIVE (TEKS-FIRST):
+- Treat the TEKS as the controlling criteria for this assessment.
+- Questions must explicitly align to the TEKS. Use the instructional content only to provide context/evidence.
+- If the content suggests ideas beyond the TEKS, ignore them unless they clearly support a TEKS target.
+
+${teksPriorityBlock || ""}
+
 Use the following instructional content to generate STAAR-style assessment questions. All items must mirror the tone, structure, and rigor found in STAAR-released tests for the specified subject and grade level.
 
 Each assessment will always begin with a title formatted like this:
@@ -724,17 +752,16 @@ ${["mixed", "multiple"].includes(type) ? `
 
 🧠 STAAR Question Quality Guidelines:
 
-- All questions must follow the structure and rigor of STAAR-released items
-- General comprehension questions are fine, but assessment should focus on selected standards
-- Use a mix of literal, inferential, and analytical questions
-- Questions must be clearly based on the source content
+- Alignment is non‑negotiable: each item must clearly measure a TEKS statement listed above.
+- General comprehension is fine only when it directly advances a TEKS expectation.
+- Use a mix of literal, inferential, and analytical questions as appropriate to the TEKS.
+- Base every item on the source content, but filter through the TEKS lens first.
 - Include STAAR-style distractors that are plausible but clearly incorrect
 - Use TEKS-aligned vocabulary-in-context when appropriate
-- In ELA, reading, and English, focus on comprehension, analysis, and literary elements.
-- In Science and Social Studies, emphasize cause/effect, comparison, reasoning, and conceptual clarity
+- In ELA/Reading, prefer author’s craft, meaning, structure, and vocabulary-in-context tied to TEKS.
+- In Science & Social Studies, emphasize cause/effect, comparison, reasoning, and TEKS concepts
 - In Math, favor problem-solving and multi-step reasoning over isolated computation
-- For Short Answer, require synthesis or explanation, not just recall
-- True/False items should reflect concept understanding and not be giveaways
+- For Short Answer, require synthesis or explanation aligned to TEKS, not just recall
 - Avoid trick questions, vague prompts, or trivia
 
 // 📌 FORMATTING INSTRUCTIONS — STRICT
@@ -806,6 +833,8 @@ RULES:
 
 Content:
 Below is the source content provided by the teacher. This content may be a list of standards, a lesson plan, or a reference document. Your job is to extract and use only the parts that are instructionally relevant, grade-appropriate, and aligned with STAAR expectations for the specified subject.
+
+You must only use it to supply context and evidence for TEKS‑aligned questions. Do not elevate content details over TEKS alignment.
 
 Only generate questions or prompts that reflect the rigor, clarity, and structure of STAAR assessments.
 
