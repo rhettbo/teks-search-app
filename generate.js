@@ -486,6 +486,7 @@ Leave one blank line under the header, and one blank line between the Formative 
 
 ### Requirements:  
 - The two lesson plan options should be distinct and unique from one another.
+- Supplies and activities suggested must be realistic for the grade level, subject, and public school setting.
 - Use explicit instruction: model > guided practice > independent work
 - Lessons should contain zero bias  
 - Lessons should apply an appropriate level of rigor for the grade level and subject
@@ -724,11 +725,12 @@ ${["mixed", "multiple"].includes(type) ? `
 🧠 STAAR Question Quality Guidelines:
 
 - All questions must follow the structure and rigor of STAAR-released items
+- General comprehension questions are fine, but assessment should focus on selected standards
 - Use a mix of literal, inferential, and analytical questions
 - Questions must be clearly based on the source content
 - Include STAAR-style distractors that are plausible but clearly incorrect
 - Use TEKS-aligned vocabulary-in-context when appropriate
-- In ELA, reading, and English, focus on comprehension, analysis, and literary elements. Stick to the selected standards
+- In ELA, reading, and English, focus on comprehension, analysis, and literary elements.
 - In Science and Social Studies, emphasize cause/effect, comparison, reasoning, and conceptual clarity
 - In Math, favor problem-solving and multi-step reasoning over isolated computation
 - For Short Answer, require synthesis or explanation, not just recall
