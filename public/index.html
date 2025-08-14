@@ -93,6 +93,7 @@
         <option value="upload">Upload File(s)</option>
         <option value="doc">Paste link from Google Drive</option>
         <option value="youtube">Paste YouTube Link</option>
+        <option value="teacherprompt">Teacher Prompt</option>
       </select>
 
       <div id="fileUploadSection" class="hidden">
@@ -118,8 +119,16 @@
         <p style="font-size: 0.85rem; color: #555; margin-top: 4px;">
            <em>Video must have "Show transcript" button in details section to work. Videos ≥ 20 min. may be too large to process.</em>
         </p>
-
       </div>
+
+      <div id="teacherPromptSection" class="hidden">
+  <label>Enter your own prompt:
+    <textarea id="teacherPromptInput" rows="4" style="width:100%;"></textarea>
+  </label>
+  <p style="font-size: 0.85rem; color: #555; margin-top: 4px;">
+     <em>Describe what you would like to cover in your assessment.</em>
+  </p>
+</div>
       
       <label for="assessmentTypeSelect">Assessment Type:</label>
       <select id="assessmentTypeSelect">

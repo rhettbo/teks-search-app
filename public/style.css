@@ -471,6 +471,21 @@ Generate Assessment Menu
   }
 }
 
+/* === Teacher Prompt Styling === */
+#teacherPromptSection textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: none; /* auto-expanding, so no manual resize */
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: inherit;
+  overflow-y: hidden; /* hide scrollbar during auto-expansion */
+}
+
 /***** Generating Loader (timing‑tunable) *****/
 .gen-modal.hidden { display: none !important; }
 .gen-modal { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; background: rgba(17, 24, 39, .35); backdrop-filter: blur(1.5px);

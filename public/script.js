@@ -1178,7 +1178,20 @@ async function generateAssessmentPreview() {
   return;
 }
 
+} else if (sourceType === "teacherprompt") {
+  const promptText = document.getElementById("teacherPromptInput")?.value?.trim();
+  if (!promptText) {
+    previewTextDiv.textContent = "❌ Please enter a teacher prompt.";
+    previewModal.classList.remove("hidden");
+    previewModal.classList.add("active");
+    await LoaderGuard.finish('assessment', loaderId, { ok: false });
+    return;
   }
+  source.content = promptText;
+
+  }
+
+
 
   // ── Build request ──
   const selectedTEKSList = Array.from(selectedTEKS).map(t => JSON.parse(t));
@@ -1335,6 +1348,8 @@ document.addEventListener("DOMContentLoaded", () => {
     docSection?.classList.toggle("hidden", val !== "doc");
     youtubeSection?.classList.toggle("hidden", val !== "youtube");
       // If switching away from YouTube, drop any cached transcript
+    const teacherPromptSection = document.getElementById("teacherPromptSection");
+    teacherPromptSection?.classList.toggle("hidden", val !== "teacherprompt");
   if (val !== "youtube") {
     ytTranscriptCache.clear();
     lastYouTubeId = null;
@@ -1431,6 +1446,15 @@ typeSelect?.addEventListener("change", updateAssessmentFields);
     }
   });
 });
+
+// Auto-expand Teacher Prompt textarea
+const teacherPromptInput = document.getElementById("teacherPromptInput");
+if (teacherPromptInput) {
+  teacherPromptInput.addEventListener("input", function () {
+    this.style.height = "auto"; // reset before recalculating
+    this.style.height = this.scrollHeight + "px";
+  });
+}
 
 /** Generating Loader controller with tunable timing */
 const GenLoader = (() => {
