@@ -486,6 +486,21 @@ Generate Assessment Menu
   overflow-y: hidden; /* hide scrollbar during auto-expansion */
 }
 
+/* === Teacher Input Styling === */
+#teacherInputSection textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: none; /* keep consistent with Teacher Prompt */
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: inherit; /* match site’s font */
+  overflow-y: auto;
+}
+
 /***** Generating Loader (timing‑tunable) *****/
 .gen-modal.hidden { display: none !important; }
 .gen-modal { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; background: rgba(17, 24, 39, .35); backdrop-filter: blur(1.5px);
