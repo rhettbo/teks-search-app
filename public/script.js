@@ -1456,29 +1456,27 @@ if (teacherPromptInput) {
   const sourceSelect = document.getElementById("sourceTypeSelect");
   if (sourceSelect) sourceSelect.value = "teks";
   clearAllSourceInputs();
+  document.getElementById("teacherInput")?.value = "";   // ← NEW: clear Teacher Input
   updateSourceFields();
 });
+
 
   closePreviewBtn?.addEventListener("click", () => {
   previewModal?.classList.add("hidden");
   previewModal?.classList.remove("active"); // 👈 This is key
 });
 
-  window.addEventListener("click", (e) => {
   if (e.target === modal) {
-    modal.classList.add("hidden");
-    modal.classList.remove("active");
+  modal.classList.add("hidden");
+  modal.classList.remove("active");
 
-    // Reset to defaults on exit (backdrop close)
-    const sourceSelect = document.getElementById("sourceTypeSelect");
-    if (sourceSelect) sourceSelect.value = "teks";
-    clearAllSourceInputs();
-    updateSourceFields();
-  }
-  if (e.target === previewModal) {
-    previewModal.classList.add("hidden");
-  }
-});
+  // Reset to defaults on exit (backdrop close)
+  const sourceSelect = document.getElementById("sourceTypeSelect");
+  if (sourceSelect) sourceSelect.value = "teks";
+  clearAllSourceInputs();
+  document.getElementById("teacherInput")?.value = "";   // ← NEW: clear Teacher Input
+  updateSourceFields();
+}
 
 const essayStyleSection = document.getElementById("essayStyleSection");
 
