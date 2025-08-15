@@ -118,7 +118,7 @@ input {
   top: 20px;
   left: 20px;
   width: 250px;
-  background: #e9f7ef;
+  background: #b3dbfc;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -605,3 +605,15 @@ h1 img {
   display: block;
   max-width: 400px;
 }
+
+/* Mobile: center the header/logo only on small screens */
+@media (max-width: 640px) {
+  .container > h1 {
+    text-align: center;           /* centers text titles like "TEKS Search Tool" */
+  }
+  .container > h1 img {
+    margin-left: auto;            /* centers an <img> logo inside the <h1> */
+    margin-right: auto;
+  }
+}
+
