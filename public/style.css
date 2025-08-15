@@ -118,7 +118,7 @@ input {
   top: 20px;
   left: 20px;
   width: 250px;
-  background: #cce7fd;
+  background: #e1f1ff;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -443,6 +443,20 @@ Generate Assessment Menu
 #subjectSelect:focus,
 #subjectSelect:active {
   border: 1px solid #ccc;
+  outline: none;
+}
+
+/* Search input: match Grade/Subject borders */
+#searchInput {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 8px;      /* match the selects */
+  background-color: #fff;
+}
+
+#searchInput:focus,
+#searchInput:active {
+  border: 1px solid #ccc;  /* keep the same border on focus */
   outline: none;
 }
 
