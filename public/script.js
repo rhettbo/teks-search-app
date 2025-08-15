@@ -1456,7 +1456,8 @@ if (teacherPromptInput) {
   const sourceSelect = document.getElementById("sourceTypeSelect");
   if (sourceSelect) sourceSelect.value = "teks";
   clearAllSourceInputs();
-  document.getElementById("teacherInput")?.value = "";   // ← NEW: clear Teacher Input
+  const ti = document.getElementById("teacherInput");
+  if (ti) ti.value = "";
   updateSourceFields();
 });
 
@@ -1466,17 +1467,28 @@ if (teacherPromptInput) {
   previewModal?.classList.remove("active"); // 👈 This is key
 });
 
+ // Close on backdrop click (Assessment modal + Preview modal)
+window.addEventListener("click", (e) => {
   if (e.target === modal) {
-  modal.classList.add("hidden");
-  modal.classList.remove("active");
+    modal.classList.add("hidden");
+    modal.classList.remove("active");
 
-  // Reset to defaults on exit (backdrop close)
-  const sourceSelect = document.getElementById("sourceTypeSelect");
-  if (sourceSelect) sourceSelect.value = "teks";
-  clearAllSourceInputs();
-  document.getElementById("teacherInput")?.value = "";   // ← NEW: clear Teacher Input
-  updateSourceFields();
-}
+    // Reset to defaults on exit (backdrop close)
+    const sourceSelect = document.getElementById("sourceTypeSelect");
+    if (sourceSelect) sourceSelect.value = "teks";
+    clearAllSourceInputs();
+
+    // Clear Teacher Input safely (no optional-chaining assignment)
+    const ti = document.getElementById("teacherInput");
+    if (ti) ti.value = "";
+
+    updateSourceFields();
+  }
+
+  if (e.target === previewModal) {
+    previewModal.classList.add("hidden");
+  }
+});
 
 const essayStyleSection = document.getElementById("essayStyleSection");
 
