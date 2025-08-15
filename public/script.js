@@ -821,12 +821,17 @@ document.getElementById("aiResponseContainer").addEventListener("click", async (
         minShowMs: window.__isLessonRetry ? 1200 : 700,
       });
 
-      const regenerated = await fetchLessonPlans({
-        prompt: objectivesText,
-        duration,
-        grade,
-        subject
-      });
+      const teksList2 = Array.from(selectedTEKS).map(str => JSON.parse(str).standard).filter(Boolean);
+const primaryPrompt2 = teksList2.length
+  ? `PRIMARY TEKS (controlling criteria):\n- ${teksList2.join("\n- ")}\n\nOBJECTIVE:\n${objectivesText}`
+  : objectivesText;
+
+const regenerated = await fetchLessonPlans({
+  prompt: primaryPrompt2,
+  duration,
+  grade,
+  subject
+});
 
       renderLessonContent(regenerated.lessonPlans || "");
       createTryAgainButton({ container: responseContainer, onClick: handleTryAgain });
@@ -866,7 +871,12 @@ document.getElementById("aiResponseContainer").addEventListener("click", async (
       minShowMs: 700,
     });
 
-    const data = await fetchLessonPlans({ prompt: objectivesText, duration, grade, subject });
+    const teksList = Array.from(selectedTEKS).map(str => JSON.parse(str).standard).filter(Boolean);
+    const primaryPrompt = teksList.length
+  ? `PRIMARY TEKS (controlling criteria):\n- ${teksList.join("\n- ")}\n\nOBJECTIVE:\n${objectivesText}`
+  : objectivesText;
+
+    const data = await fetchLessonPlans({ prompt: primaryPrompt, duration, grade, subject });
     renderLessonContent(data.lessonPlans || "");
     createTryAgainButton({ container: responseContainer, onClick: handleTryAgain });
     modal.style.display = "block";
@@ -1191,21 +1201,35 @@ async function generateAssessmentPreview() {
 
   }
 
+  // 🔹 Always prepend selected TEKS standards to the source content
+if (selectedTEKS.size > 0) {
+  const standardsBlock = Array.from(selectedTEKS)
+    .map(t => JSON.parse(t).standard)
+    .filter(Boolean)
+    .join("\n- ");
 
+  if (standardsBlock.trim()) {
+    source.content = `The following TEKS standards are the primary basis for this assessment. All questions must directly align to them:\n\n- ${standardsBlock}\n\n${source.content || ""}`;
+  }
+}
 
   // ── Build request ──
   const selectedTEKSList = Array.from(selectedTEKS).map(t => JSON.parse(t));
-  const body = {
-    type,
-    questionCount: count,
-    formats,
-    source,
-    grade,
-    subject,
-    essayStyle,
-    selectedTEKS: selectedTEKSList,
-    elaMode
-  };
+const teacherInput = document.getElementById("teacherInput")?.value?.trim() || "";
+
+const body = {
+  type,
+  questionCount: count,
+  formats,
+  source,
+  grade,
+  subject,
+  essayStyle,
+  selectedTEKS: selectedTEKSList,
+  elaMode,
+  teacherInput   // 👈 NEW
+};
+
 
   try {
       const res = await fetch("/api/generate-assessment-preview", {
@@ -1341,6 +1365,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const youtubeSection = document.getElementById("youtubeLinkSection");
   const mixedOptions = document.getElementById("mixedOptions");
   const teacherPromptSection = document.getElementById("teacherPromptSection");
+  const teacherInputSection = document.getElementById("teacherInputSection");
 
   // Wipes all user-provided source inputs and clears YT cache
 function clearAllSourceInputs() {
@@ -1373,12 +1398,18 @@ if (teacherPromptInput) {
     fileSection?.classList.toggle("hidden", val !== "upload");
     docSection?.classList.toggle("hidden", val !== "doc");
     teacherPromptSection?.classList.toggle("hidden", val !== "teacherprompt");
+    teacherInputSection?.classList.toggle("hidden", val === "teacherprompt");
+    // (optional) clear the field when switching to Teacher Prompt, since the prompt itself is the input
+    if (val === "teacherprompt") {
+    const ti = document.getElementById("teacherInput");
+    if (ti) ti.value = "";
+    }
     youtubeSection?.classList.toggle("hidden", val !== "youtube");
       // If switching away from YouTube, drop any cached transcript
-  if (val !== "youtube") {
+    if (val !== "youtube") {
     ytTranscriptCache.clear();
     lastYouTubeId = null;
-  }
+    }
   };
 
   sourceSelect?.addEventListener("change", () => {

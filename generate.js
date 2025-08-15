@@ -675,6 +675,17 @@ The following are the TEKS standards to be addressed in this assessment. Use the
   }
 }
 
+// 📝 Inject Teacher Input (optional) for all sources EXCEPT teacher prompt
+const teacherInput = (req.body.teacherInput || "").trim();
+if (teacherInput && source?.type !== "teacherprompt") {
+  const constraintsBlock = `
+TEACHER CONSTRAINTS & PREFERENCES (apply unless they conflict with TEKS):
+- ${teacherInput}
+
+`;
+  content = `${constraintsBlock}${content}`;
+}
+
 // --- TEKS PRIORITY (always present if user selected TEKS) ---
 const teksPriorityBlock = (() => {
   if (!Array.isArray(selectedTEKSList) || selectedTEKSList.length === 0) return "";
