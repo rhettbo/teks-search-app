@@ -155,6 +155,29 @@ input {
   border-bottom: 1px solid #ccc;
 }
 
+/* === Controls layout: Grade + Subject side-by-side, input spans full width === */
+#controlsContainer {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content 1fr; /* label + select, label + select */
+  column-gap: 10px;
+  row-gap: 8px;
+  align-items: center;
+}
+
+#controlsContainer label { white-space: nowrap; }      /* keep labels on one line */
+#gradeSelect, #subjectSelect { width: 100%; }          /* let selects fill their column */
+
+/* Make the search input and the button row span the full width of the grid */
+#controlsContainer #searchInput { grid-column: 1 / -1; }
+#controlsContainer > div { grid-column: 1 / -1; }      /* the Search/Reset row */
+
+/* Small phones: stack Subject under Grade (labels still align left of their selects) */
+@media (max-width: 420px) {
+  #controlsContainer {
+    grid-template-columns: max-content 1fr; /* label + select, next row label + select */
+  }
+}
+
 /* =====================
    Search Mode Toggle
 ===================== */
