@@ -572,7 +572,13 @@ Generate Assessment Menu
   }
 }
 
+h1 {
+  margin: 0;
+}
+
 h1 img {
-  max-width: 400px; /* stops it from getting too huge on big screens */
-  height: auto;
+  height: 36px;
+  width: auto;
+  display: block;
+  max-width: 400px;
 }
